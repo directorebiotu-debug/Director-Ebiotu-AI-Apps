@@ -1,0 +1,7 @@
+{
+  "name": "FlowState",
+  "description": "A productivity system that helps people break down tasks, build consistent habits, and receive AI guidance to stay productive.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
