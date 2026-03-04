@@ -142,7 +142,7 @@ export default function LiveAudio() {
         className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 ${
           isConnected 
             ? 'bg-red-500 hover:bg-red-600 text-white' 
-            : 'bg-primary hover:bg-primary/90 text-white'
+            : 'bg-white hover:bg-gray-50 text-black border border-gray-200'
         }`}
       >
         {isConnecting ? (
