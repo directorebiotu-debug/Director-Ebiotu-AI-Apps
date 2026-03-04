@@ -62,6 +62,14 @@ export default function App() {
     setIsGeneratingInsight(false);
   };
 
+  const handleEditTask = (updatedTaskData: Omit<Task, 'id'>) => {
+    if (!editingTask) return;
+    setTasks(tasks.map(t => 
+      t.id === editingTask.id ? { ...t, ...updatedTaskData } : t
+    ));
+    setEditingTask(null);
+  };
+
   const handleToggleSubtask = (taskId: string, subtaskId: string) => {
     setTasks(tasks.map(task => {
       if (task.id === taskId) {
