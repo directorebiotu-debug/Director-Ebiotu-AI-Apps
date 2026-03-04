@@ -19,6 +19,7 @@ export interface Habit {
   title: string;
   completedToday: boolean;
   streak: number;
+  history?: string[];
 }
 
 export interface AIInsight {

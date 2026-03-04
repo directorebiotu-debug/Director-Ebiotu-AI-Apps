@@ -4,6 +4,7 @@ import { generateTaskInsight } from './lib/gemini';
 import TaskCard from './components/TaskCard';
 import HabitCard from './components/HabitCard';
 import TaskForm from './components/TaskForm';
+import HabitForm from './components/HabitForm';
 import AIInsightCard from './components/AIInsightCard';
 import LiveAudio from './components/LiveAudio';
 import { LayoutGrid, CheckSquare, Plus, BarChart2, Settings, User, Leaf, Activity, CheckCircle } from 'lucide-react';
@@ -41,6 +42,8 @@ export default function App() {
   ]);
   
   const [isAddingTask, setIsAddingTask] = useState(false);
+  const [isAddingHabit, setIsAddingHabit] = useState(false);
+  const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   const [isGeneratingInsight, setIsGeneratingInsight] = useState(false);
 
   const handleAddTask = async (newTaskData: Omit<Task, 'id'>) => {
@@ -120,14 +123,50 @@ export default function App() {
     setHabits(habits.map(habit => {
       if (habit.id === habitId) {
         const wasCompleted = habit.completedToday;
+        const todayStr = new Date().toISOString().split('T')[0];
+        let newHistory = [...(habit.history || [])];
+        
+        if (!wasCompleted) {
+          if (!newHistory.includes(todayStr)) {
+            newHistory.push(todayStr);
+          }
+        } else {
+          newHistory = newHistory.filter(d => d !== todayStr);
+        }
+
         return {
           ...habit,
           completedToday: !wasCompleted,
-          streak: wasCompleted ? Math.max(0, habit.streak - 1) : habit.streak + 1
+          streak: wasCompleted ? Math.max(0, habit.streak - 1) : habit.streak + 1,
+          history: newHistory
         };
       }
       return habit;
     }));
+  };
+
+  const handleAddHabit = (newHabit: Omit<Habit, 'id' | 'completedToday' | 'streak'>) => {
+    const habit: Habit = {
+      ...newHabit,
+      id: crypto.randomUUID(),
+      completedToday: false,
+      streak: 0,
+      history: []
+    };
+    setHabits([...habits, habit]);
+    setIsAddingHabit(false);
+  };
+
+  const handleEditHabit = (updatedHabit: Omit<Habit, 'id' | 'completedToday' | 'streak'>) => {
+    if (!editingHabit) return;
+    setHabits(habits.map(h => 
+      h.id === editingHabit.id ? { ...h, ...updatedHabit } : h
+    ));
+    setEditingHabit(null);
+  };
+
+  const handleDeleteHabit = (habitId: string) => {
+    setHabits(habits.filter(h => h.id !== habitId));
   };
 
   const dismissInsight = (taskId: string) => {
@@ -153,13 +192,27 @@ export default function App() {
 
         <div className="space-y-4">
           {/* Habits */}
-          {activeTab === 'habits' && habits.map(habit => (
-            <HabitCard 
-              key={habit.id} 
-              habit={habit} 
-              onToggle={handleToggleHabit} 
-            />
-          ))}
+          {activeTab === 'habits' && (
+            <>
+              {habits.length === 0 ? (
+                <div className="text-center py-12 bg-card rounded-2xl border border-card-border border-dashed">
+                  <Activity className="w-12 h-12 text-secondary/50 mx-auto mb-3" />
+                  <h3 className="text-primary font-medium mb-1">No habits yet</h3>
+                  <p className="text-secondary text-sm">Create a habit to start tracking your progress.</p>
+                </div>
+              ) : (
+                habits.map(habit => (
+                  <HabitCard 
+                    key={habit.id} 
+                    habit={habit} 
+                    onToggle={handleToggleHabit}
+                    onEdit={setEditingHabit}
+                    onDelete={handleDeleteHabit}
+                  />
+                ))
+              )}
+            </>
+          )}
 
           {/* Tasks */}
           {activeTab === 'tasks' && (
@@ -249,7 +302,7 @@ export default function App() {
         
         <div className="w-16 flex justify-center relative">
           <button 
-            onClick={() => setIsAddingTask(!isAddingTask)}
+            onClick={() => activeTab === 'habits' ? setIsAddingHabit(true) : setIsAddingTask(true)}
             className="absolute -top-5 left-1/2 -translate-x-1/2 w-14 h-14 rounded-full bg-primary flex items-center justify-center shadow-lg transform transition-transform active:scale-95 border-[6px]"
             style={{ borderColor: 'var(--color-bg)' }}
           >
@@ -291,6 +344,29 @@ export default function App() {
                 onCancel={() => {
                   setIsAddingTask(false);
                   setEditingTask(null);
+                }} 
+              />
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Habit Form Modal */}
+      <AnimatePresence>
+        {(isAddingHabit || editingHabit) && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-md"
+            >
+              <HabitForm 
+                initialHabit={editingHabit || undefined}
+                onSubmit={editingHabit ? handleEditHabit : handleAddHabit} 
+                onCancel={() => {
+                  setIsAddingHabit(false);
+                  setEditingHabit(null);
                 }} 
               />
             </motion.div>
